@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, validator
 from dotenv import load_dotenv
 import yaml
 from loguru import logger
+from dataclasses import dataclass
 
 # Load environment variables
 load_dotenv()
@@ -63,6 +64,13 @@ class GeminiConfig(BaseModel):
     max_retries: int = 2
     max_iterations: int = 5
     
+@dataclass
+class GroqConfig:
+    """Groq API configuration."""
+    api_key: str
+    model: str = "llama-3.3-70b-versatile"
+    temperature: float = 0.2
+
     @validator("api_key")
     def validate_api_key(cls, v):
         """Ensure API key is provided."""
@@ -109,6 +117,14 @@ class Config:
             max_iterations=int(os.getenv("MAX_AGENT_ITERATIONS", "5")),
         )
         
+        # Groq configuration
+        self.groq = GroqConfig(
+            api_key=os.getenv("GROQ_API_KEY", ""),
+            model=os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+            temperature=float(os.getenv("GROQ_TEMPERATURE", "0.2")),
+)
+
+
         self.api = APIConfig(
             host=os.getenv("API_HOST", "0.0.0.0"),
             port=int(os.getenv("API_PORT", "8000")),

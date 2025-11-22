@@ -102,12 +102,16 @@ class LayoutLMv3Analyzer(BaseLayoutAnalyzer):
         original_shape = (image.height, image.width)
         
         # Prepare input
-        if ocr_results:
+        if ocr_results and len(ocr_results) > 0:
             # Use pre-computed OCR
             entities = self._analyze_with_ocr(image, ocr_results)
         else:
-            # Let processor apply OCR
-            entities = self._analyze_with_processor_ocr(image)
+            # Let processor apply OCR (only if apply_ocr is True)
+            if self.apply_ocr:
+                entities = self._analyze_with_processor_ocr(image)
+            else:
+                logger.warning("No OCR results provided and apply_ocr=False. Returning empty layout.")
+                entities = []
         
         processing_time = time.time() - start_time
         
@@ -118,6 +122,7 @@ class LayoutLMv3Analyzer(BaseLayoutAnalyzer):
             image_shape=original_shape,
             processing_time=processing_time,
         )
+
     
     def _analyze_with_processor_ocr(
         self,
@@ -132,33 +137,40 @@ class LayoutLMv3Analyzer(BaseLayoutAnalyzer):
         Returns:
             List of LayoutEntity objects
         """
-        # Process image (applies OCR internally)
-        encoding = self.processor(
-            image,
-            return_tensors="pt",
-            truncation=True,
-            padding="max_length",
-            max_length=512,
-        )
+        try:
+            # Process image (applies OCR internally)
+            encoding = self.processor(
+                image,
+                return_tensors="pt",
+                truncation=True,
+                padding="max_length",
+                max_length=512,
+            )
+            
+            # Move to device
+            encoding = {k: v.to(self.device) for k, v in encoding.items()}
+            
+            # Forward pass
+            with torch.no_grad():
+                outputs = self.model(**encoding)
+            
+            # Get predictions
+            predictions = outputs.logits.argmax(-1).squeeze().tolist()
+            
+            # Extract entities
+            entities = self._extract_entities(
+                encoding,
+                predictions,
+                image.size,
+            )
+            
+            return entities
         
-        # Move to device
-        encoding = {k: v.to(self.device) for k, v in encoding.items()}
-        
-        # Forward pass
-        with torch.no_grad():
-            outputs = self.model(**encoding)
-        
-        # Get predictions
-        predictions = outputs.logits.argmax(-1).squeeze().tolist()
-        
-        # Extract entities
-        entities = self._extract_entities(
-            encoding,
-            predictions,
-            image.size,
-        )
-        
-        return entities
+        except Exception as e:
+            logger.error(f"Error in processor OCR: {e}")
+            logger.warning("Falling back to empty layout")
+            return []
+
     
     def _analyze_with_ocr(
         self,
