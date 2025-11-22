@@ -18,24 +18,8 @@
 ---
 
 # 📸 **Architecture Overview (Diagram)**
+![Architecture Overview](Architecture/System_Architecture_-_Agentic_Document_Understanding_Platform.png)
 
-> *(Replace the placeholder below with your PNG diagram when ready)*
-
-<p align="center">
-  <img src="docs/architecture-diagram.png" alt="Architecture Diagram" width="800"/>
-</p>
-
----
-
-# 🔄 **Pipeline Flowchart (High-Level Flow)**
-
-> *(Replace placeholder with your actual exported flowchart image)*
-
-<p align="center">
-  <img src="docs/pipeline-flowchart.png" alt="Pipeline Flowchart" width="800"/>
-</p>
-
----
 
 # 🚀 **Overview**
 
